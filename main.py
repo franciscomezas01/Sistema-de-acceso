@@ -12,10 +12,10 @@ class Acceso:
 
     def __init__(self, ventana):
         self.wind = ventana
-        self.wind.title('Gimnasio {Nombre}')  # Reemplaza {Nombre} con el nombre de tu gimnasio
-        self.wind.configure(bg='#7D3C98')  # Fondo en color LightSalmon
+        self.wind.title('Gimnasio {Nombre}')  
+        self.wind.configure(bg='#7D3C98')  
 
-        # Estilo de los botones
+        
         self.style = ttk.Style()
         self.style.configure('TButton', font=('Helvetica', 12))
 
@@ -31,7 +31,7 @@ class Acceso:
         # Marco para leer tarjetas
         frame_leer = LabelFrame(frame_principal, text="Leer tarjetas", font=('Helvetica', 14, 'bold'), bg='#5499C7')
         frame_leer.grid(row=0, column=1, pady=20, padx=10)
-        ttk.Button(frame_leer, text='Acceso', command=self.agregar_usuario, style='TButton').grid(row=0, column=0, sticky=W+E)
+        ttk.Button(frame_leer, text='Acceso', style='TButton').grid(row=0, column=0, sticky=W+E)
 
         # Marco para ingreso por DNI
         frame_dni = LabelFrame(frame_principal, text="Ingreso por DNI", font=('Helvetica', 14, 'bold'), bg='#5499C7')
@@ -57,7 +57,7 @@ class Acceso:
     def agregar_usuario(self):
         self.ventana_usuario = Toplevel()
         self.ventana_usuario.title('Agregar usuario')
-        self.ventana_usuario.configure(bg='#FFA07A')  # Fondo en color LightSalmon
+        self.ventana_usuario.configure(bg='#FFA07A')  
 
         Label(self.ventana_usuario, text="Nombre: ", font=('Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
         self.nombre = Entry(self.ventana_usuario)
@@ -78,6 +78,8 @@ class Acceso:
         self.message = Label(text='', fg='red', font=('Helvetica', 12, 'italic'), bg='#FFA07A')  # Fondo en color LightSalmon
         self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
 
+        self.entrar_tarjetar()
+        
     def Leer_tarjeta(self):
         try:
             ser = serial.Serial('COM3', 9600)
@@ -119,7 +121,7 @@ class Acceso:
     def sumar_mes(self):
         self.ventana_mes = Toplevel()
         self.ventana_mes.title('Abono de cuota')
-        self.ventana_mes.configure(bg='#FFA07A')  # Fondo en color LightSalmon
+        self.ventana_mes.configure(bg='#FFA07A')  
 
         Label(self.ventana_mes, text="Documento: ", font=('Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
         self.documento = Entry(self.ventana_mes)
@@ -128,7 +130,7 @@ class Acceso:
 
         ttk.Button(self.ventana_mes, text="Abonar cuota", command=self.mes, style='TButton').grid(row=6, columnspan=2, sticky=W+E)
 
-        self.message = Label(text='Se guardo la cuota', fg='red', font=('Helvetica', 12, 'italic'), bg='#FFA07A')  # Fondo en color LightSalmon
+        self.message = Label(text='Se guardo la cuota', fg='red', font=('Helvetica', 12, 'italic'), bg='#FFA07A') 
         self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
         
     def mes(self):
@@ -150,7 +152,7 @@ class Acceso:
     def ingreso_dni(self):
         self.ventana_dni = Toplevel()
         self.ventana_dni.title('Ingreso por dni')
-        self.ventana_dni.configure(bg='#FFA07A')  # Fondo en color LightSalmon
+        self.ventana_dni.configure(bg='#FFA07A') 
 
         Label(self.ventana_dni, text="Documento: ", font=('Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
         self.documento = Entry(self.ventana_dni)
@@ -158,7 +160,7 @@ class Acceso:
         self.documento.grid(row=1, column=1)
 
         ttk.Button(self.ventana_dni, text="Ingresar", command=self.verificacion_dni, style='TButton').grid(row=6, columnspan=2, sticky=W+E)
-        self.message = Label(text='', fg='red', font=('Helvetica', 12, 'italic'), bg='#FFA07A')  # Fondo en color LightSalmon
+        self.message = Label(text='', fg='red', font=('Helvetica', 12, 'italic'), bg='#FFA07A') 
         self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
         
     def verificacion_dni(self):
@@ -171,7 +173,6 @@ class Acceso:
             parametros = (documento, fecha_actual)
             resultado = self.run_query(query, parametros)
 
-            # Verificar si hay resultados (si la fecha almacenada es menor que la fecha actual)
             if resultado.fetchone():
                 self.message['text'] = 'Paga la cuota rata'
             else:
@@ -184,20 +185,34 @@ class Acceso:
     
     def exportar_a_excel(self):
         try:
-            # Consulta SQL para obtener todos los datos de la tabla clientes
+            # consulta SQL para obtenedatos
             query = 'SELECT * FROM clientes'
             
-            # Obtener los datos de la base de datos
+            # datos de la base de datos
             with sqlite3.connect(self.db_name) as conn:
                 df = pd.read_sql_query(query, conn)
 
-            # Guardar el DataFrame en un archivo Excel
             df.to_excel('datos_clientes.xlsx', index=False)
             print("Datos exportados a Excel exitosamente.")
 
         except Exception as e:
             print("Error al exportar a Excel:", e)
-            
+    
+    def entrar_tarjeta(self):
+        fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
+        ser = serial.Serial("COM3", 9600)
+        tarjeta_id = ser.readline().decode().strip()
+        query = "SELECT * FROM clientes WHERE Tarjeta = ? AND date(Fecha) < date(?)"
+        parametros = (tarjeta_id, fecha_actual)
+        
+        resultado = self.run_query(query, parametros) 
+        
+        if resultado.fetchone():
+            self.message['text'] = 'Paga la cuota rata'
+        else:
+            self.message['text'] = 'BIENVENIDO'
+    
+
 if __name__ == '__main__':
     ventana = Tk()
     aplicacion = Acceso(ventana)
