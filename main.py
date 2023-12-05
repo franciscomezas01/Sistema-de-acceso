@@ -167,6 +167,7 @@ class Acceso:
         try:
             documento = self.documento.get()
             # Obtener la fecha actual en el formato correcto para SQLite
+            ser = serial.Serial("COM3", 9600)
             fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
 
             query = 'SELECT * FROM clientes WHERE Dni = ? AND date(Fecha) < date(?)'
@@ -175,8 +176,10 @@ class Acceso:
 
             if resultado.fetchone():
                 self.message['text'] = 'Paga la cuota rata'
+                ser.write(b'0') 
             else:
                 self.message['text'] = 'BIENVENIDO'
+                ser.write(b'1')
                 
             self.ventana_dni.destroy()    
 
