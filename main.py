@@ -25,36 +25,40 @@ class Acceso:
         frame_principal.grid(row=0, column=0, pady=50, padx=50)
 
         # Marco para agregar usuario
-        frame_agregar = LabelFrame(frame_principal, text="Agregar usuario", font=(
+        frame_agregar = LabelFrame(frame_principal, text="Usuario", font=(
             'Helvetica', 14, 'bold'), bg='#5499C7')
         frame_agregar.grid(row=0, column=0, pady=20, padx=10)
-        ttk.Button(frame_agregar, text='Usuarios', command=self.agregar_usuario,
+        ttk.Button(frame_agregar, text='Agregar', command=self.agregar_usuario,
+                   style='TButton').grid(row=0, column=0,  padx=10, sticky=W+E, columnspan=2)
+        ttk.Button(frame_agregar, text='Eliminar', command=self.agregar_usuario,
                    style='TButton').grid(row=1, column=0,  padx=10, sticky=W+E, columnspan=2)
+        ttk.Button(frame_agregar, text='Actualizar datos', command=self.agregar_usuario,
+                   style='TButton').grid(row=2, column=0,  padx=10, sticky=W+E, columnspan=2)
 
         # Marco para leer tarjetas
-        frame_leer = LabelFrame(frame_principal, text="Leer tarjetas", font=(
+        frame_leer = LabelFrame(frame_principal, text="Ingreso", font=(
             'Helvetica', 14, 'bold'), bg='#5499C7')
         frame_leer.grid(row=0, column=1, pady=20, padx=10)
-        ttk.Button(frame_leer, text='Acceso', style='TButton').grid(
+        ttk.Button(frame_leer, text='Tarjeta', style='TButton').grid(
             row=0, column=0, sticky=W+E)
+        ttk.Button(frame_leer, text='Documento', command=self.ingreso_dni,
+                   style='TButton').grid(row=1, column=0, sticky=W+E)
 
-        # Marco para ingreso por DNI
-        frame_dni = LabelFrame(frame_principal, text="Ingreso por DNI", font=(
-            'Helvetica', 14, 'bold'), bg='#5499C7')
-        frame_dni.grid(row=1, column=0, pady=20, padx=10)
-        ttk.Button(frame_dni, text='Documento', command=self.ingreso_dni,
-                   style='TButton').grid(row=0, column=0, sticky=W+E)
 
         # Marco para sumar mes
-        frame_sumar_mes = LabelFrame(frame_principal, text="Sumar Mes", font=(
+        frame_sumar_mes = LabelFrame(frame_principal, text="Sumar", font=(
             'Helvetica', 14, 'bold'), bg='#5499C7')
         frame_sumar_mes.grid(row=1, column=1, pady=20, padx=10)
-        ttk.Button(frame_sumar_mes, text='Sumar', command=self.sumar_mes,
+        ttk.Button(frame_sumar_mes, text='Sumar mes', command=self.sumar_mes,
                    style='TButton').grid(row=0, column=0, sticky=W+E)
+        ttk.Button(frame_sumar_mes, text='Sumar 6 meses', command=self.sumar_6mes,
+                   style='TButton').grid(row=1, column=0, sticky=W+E)
+        ttk.Button(frame_sumar_mes, text='Sumar un año', command=self.sumar_año,
+                   style='TButton').grid(row=2, column=0, sticky=W+E)
 
         frame_excel = LabelFrame(frame_principal, text="Exportar", font=(
             'Helvetica', 14, 'bold'), bg='#5499C7')
-        frame_excel.grid(row=2, column=0, pady=20, padx=10)
+        frame_excel.grid(row=1, column=0, pady=20, padx=10)
         ttk.Button(frame_excel, text='excel', command=self.exportar_a_excel,
                    style='TButton').grid(row=0, column=0, sticky=W+E)
 
@@ -114,12 +118,25 @@ class Acceso:
 
     def guardar_usuario(self):
         try:
-            if self.validacion():
+            dni = self.documento.get()
+
+        # Verifica si el DNI ya existe en la base de datos
+            query_verificacion = 'SELECT * FROM clientes WHERE Dni = ?'
+            parametros_verificacion = (dni,)
+            resultado_verificacion = self.run_query(
+            query_verificacion, parametros_verificacion)
+
+            if resultado_verificacion.fetchone():
+            # El DNI ya existe, muestra un mensaje de error
+                self.message['text'] = 'El DNI {} ya existe en la base de datos'.format(
+                dni)
+                self.documento.delete(0, END)
+            elif self.validacion():
                 fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
                 tarjeta_id = "8675309125"
                 query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha) VALUES (?, ?, ?, ?, ?)'
                 parametros = (self.nombre.get(), self.apellido.get(
-                ), self.documento.get(), tarjeta_id, fecha_actual)
+                ), dni, tarjeta_id, fecha_actual)
                 self.run_query(query, parametros)
 
                 print("Usuario guardado en la base de datos.")
@@ -171,6 +188,76 @@ class Acceso:
 
         except Exception as e:
             print("Error:", e)
+            
+    def sumar_6mes(self):
+        self.ventana_mes = Toplevel()
+        self.ventana_mes.title('Abono de cuota')
+        self.ventana_mes.configure(bg='#FFA07A')
+
+        Label(self.ventana_mes, text="Documento: ", font=(
+            'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
+        self.documento = Entry(self.ventana_mes)
+        self.documento.focus()
+        self.documento.grid(row=1, column=1)
+
+        ttk.Button(self.ventana_mes, text="Abonar cuota", command=self.Seismes,
+                   style='TButton').grid(row=6, columnspan=2, sticky=W+E)
+
+        self.message = Label(text='Se guardo la cuota', fg='red', font=(
+            'Helvetica', 12, 'italic'), bg='#FFA07A')
+        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
+
+    def Seismes(self):
+        try:
+            documento = self.documento.get()
+
+            if documento:
+                query = 'UPDATE clientes SET Fecha = DATE(Fecha, "+6 month") WHERE Dni = ?'
+                parametros = (documento,)
+                self.run_query(query, parametros)
+                self.message['text'] = 'Se ha sumado un mes al cliente con documento {}'.format(
+                    documento)
+                self.ventana_mes.destroy()
+            else:
+                self.message['text'] = 'Ingrese un documento válido'
+
+        except Exception as e:
+            print("Error:", e)
+            
+    def sumar_año(self):
+        self.ventana_mes = Toplevel()
+        self.ventana_mes.title('Abono de cuota')
+        self.ventana_mes.configure(bg='#FFA07A')
+
+        Label(self.ventana_mes, text="Documento: ", font=(
+            'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
+        self.documento = Entry(self.ventana_mes)
+        self.documento.focus()
+        self.documento.grid(row=1, column=1)
+
+        ttk.Button(self.ventana_mes, text="Abonar cuota", command=self.año,
+                   style='TButton').grid(row=6, columnspan=2, sticky=W+E)
+
+        self.message = Label(text='Se guardo la cuota', fg='red', font=(
+            'Helvetica', 12, 'italic'), bg='#FFA07A')
+        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
+
+    def año(self):
+        try:
+            documento = self.documento.get()
+
+            if documento:
+                query = 'UPDATE clientes SET Fecha = DATE(Fecha, "+12 month") WHERE Dni = ?'
+                parametros = (documento,)
+                self.run_query(query, parametros)
+                self.message['text'] = 'Se ha sumado un mes al cliente con documento {}'.format(
+                    documento)
+                self.ventana_mes.destroy()
+            else:
+                self.message['text'] = 'Ingrese un documento válido'
+
+        except Exception as e:
+            print("Error:", e)
 
     def ingreso_dni(self):
         self.ventana_dni = Toplevel()
@@ -194,20 +281,26 @@ class Acceso:
             documento = self.documento.get()
             # Obtener la fecha actual en el formato correcto para SQLite
             fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
+            dni_existente_query = 'SELECT * FROM clientes WHERE Dni = ?'
+            dni_existente_parametros = (documento,)
+            dni_existente_resultado = self.run_query(dni_existente_query, dni_existente_parametros)
+            if dni_existente_resultado.fetchone():
+                query = 'SELECT * FROM clientes WHERE Dni = ? AND date(Fecha) < date(?)'
+                parametros = (documento, fecha_actual)
+                resultado = self.run_query(query, parametros)
 
-            query = 'SELECT * FROM clientes WHERE Dni = ? AND date(Fecha) < date(?)'
-            parametros = (documento, fecha_actual)
-            resultado = self.run_query(query, parametros)
+                if resultado.fetchone():
+                
+                    self.message['text'] = 'Paga la cuota rata'
+                    #self.ser.write(b'0')
+                else:
+                    self.message['text'] = 'BIENVENIDO'
+                    print("usuario no encontrado")
+                    ##self.ser.write(b'1')
 
-            if resultado.fetchone():
-                self.message['text'] = 'Paga la cuota rata'
-                self.ser.write(b'0')
+                self.ventana_dni.destroy()
             else:
-                self.message['text'] = 'BIENVENIDO'
-                self.ser.write(b'1')
-
-            self.ventana_dni.destroy()
-
+                self.message['text'] = 'No existe usuario con ese dni'
         except Exception as e:
             print("Error:", e)
 
