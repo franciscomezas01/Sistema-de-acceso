@@ -3,6 +3,7 @@ from tkinter import *
 import sqlite3
 import serial
 import datetime
+from dateutil.relativedelta import relativedelta
 
 import pandas as pd
 
@@ -44,16 +45,15 @@ class Acceso:
         ttk.Button(frame_leer, text='Documento', command=self.ingreso_dni,
                    style='TButton').grid(row=1, column=0, sticky=W+E)
 
-
         # Marco para sumar mes
         frame_sumar_mes = LabelFrame(frame_principal, text="Sumar", font=(
             'Helvetica', 14, 'bold'), bg='#5499C7')
         frame_sumar_mes.grid(row=1, column=1, pady=20, padx=10)
-        ttk.Button(frame_sumar_mes, text='Sumar mes', command=self.sumar_mes,
+        ttk.Button(frame_sumar_mes, text='Sumar mes', command=lambda:self.sumar_mes(1),
                    style='TButton').grid(row=0, column=0, sticky=W+E)
-        ttk.Button(frame_sumar_mes, text='Sumar 6 meses', command=self.sumar_6mes,
+        ttk.Button(frame_sumar_mes, text='Sumar 6 meses', command=lambda:self.sumar_mes(6),
                    style='TButton').grid(row=1, column=0, sticky=W+E)
-        ttk.Button(frame_sumar_mes, text='Sumar un año', command=self.sumar_año,
+        ttk.Button(frame_sumar_mes, text='Sumar un año', command=lambda:self.sumar_mes(12),
                    style='TButton').grid(row=2, column=0, sticky=W+E)
 
         frame_excel = LabelFrame(frame_principal, text="Exportar", font=(
@@ -124,12 +124,12 @@ class Acceso:
             query_verificacion = 'SELECT * FROM clientes WHERE Dni = ?'
             parametros_verificacion = (dni,)
             resultado_verificacion = self.run_query(
-            query_verificacion, parametros_verificacion)
+                query_verificacion, parametros_verificacion)
 
             if resultado_verificacion.fetchone():
-            # El DNI ya existe, muestra un mensaje de error
+                # El DNI ya existe, muestra un mensaje de error
                 self.message['text'] = 'El DNI {} ya existe en la base de datos'.format(
-                dni)
+                    dni)
                 self.documento.delete(0, END)
             elif self.validacion():
                 fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
@@ -153,8 +153,8 @@ class Acceso:
 
         except Exception as e:
             print("Error:", e)
-
-    def sumar_mes(self):
+           
+    def sumar_mes(self,cantidad_meses):
         self.ventana_mes = Toplevel()
         self.ventana_mes.title('Abono de cuota')
         self.ventana_mes.configure(bg='#FFA07A')
@@ -164,94 +164,24 @@ class Acceso:
         self.documento = Entry(self.ventana_mes)
         self.documento.focus()
         self.documento.grid(row=1, column=1)
+        self.cantidad_meses = cantidad_meses
 
         ttk.Button(self.ventana_mes, text="Abonar cuota", command=self.mes,
                    style='TButton').grid(row=6, columnspan=2, sticky=W+E)
-
-        self.message = Label(text='Se guardo la cuota', fg='red', font=(
+        self.message = Label(text='', fg='red', font=(
             'Helvetica', 12, 'italic'), bg='#FFA07A')
         self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
+
 
     def mes(self):
         try:
             documento = self.documento.get()
-
             if documento:
-                query = 'UPDATE clientes SET Fecha = DATE(Fecha, "+1 month") WHERE Dni = ?'
+                query = 'UPDATE clientes SET Fecha = DATE(Fecha, "+{} month") WHERE Dni = ?'.format(self.cantidad_meses)
                 parametros = (documento,)
                 self.run_query(query, parametros)
-                self.message['text'] = 'Se ha sumado un mes al cliente con documento {}'.format(
-                    documento)
-                self.ventana_mes.destroy()
-            else:
-                self.message['text'] = 'Ingrese un documento válido'
-
-        except Exception as e:
-            print("Error:", e)
-            
-    def sumar_6mes(self):
-        self.ventana_mes = Toplevel()
-        self.ventana_mes.title('Abono de cuota')
-        self.ventana_mes.configure(bg='#FFA07A')
-
-        Label(self.ventana_mes, text="Documento: ", font=(
-            'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
-        self.documento = Entry(self.ventana_mes)
-        self.documento.focus()
-        self.documento.grid(row=1, column=1)
-
-        ttk.Button(self.ventana_mes, text="Abonar cuota", command=self.Seismes,
-                   style='TButton').grid(row=6, columnspan=2, sticky=W+E)
-
-        self.message = Label(text='Se guardo la cuota', fg='red', font=(
-            'Helvetica', 12, 'italic'), bg='#FFA07A')
-        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
-
-    def Seismes(self):
-        try:
-            documento = self.documento.get()
-
-            if documento:
-                query = 'UPDATE clientes SET Fecha = DATE(Fecha, "+6 month") WHERE Dni = ?'
-                parametros = (documento,)
-                self.run_query(query, parametros)
-                self.message['text'] = 'Se ha sumado un mes al cliente con documento {}'.format(
-                    documento)
-                self.ventana_mes.destroy()
-            else:
-                self.message['text'] = 'Ingrese un documento válido'
-
-        except Exception as e:
-            print("Error:", e)
-            
-    def sumar_año(self):
-        self.ventana_mes = Toplevel()
-        self.ventana_mes.title('Abono de cuota')
-        self.ventana_mes.configure(bg='#FFA07A')
-
-        Label(self.ventana_mes, text="Documento: ", font=(
-            'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
-        self.documento = Entry(self.ventana_mes)
-        self.documento.focus()
-        self.documento.grid(row=1, column=1)
-
-        ttk.Button(self.ventana_mes, text="Abonar cuota", command=self.año,
-                   style='TButton').grid(row=6, columnspan=2, sticky=W+E)
-
-        self.message = Label(text='Se guardo la cuota', fg='red', font=(
-            'Helvetica', 12, 'italic'), bg='#FFA07A')
-        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
-
-    def año(self):
-        try:
-            documento = self.documento.get()
-
-            if documento:
-                query = 'UPDATE clientes SET Fecha = DATE(Fecha, "+12 month") WHERE Dni = ?'
-                parametros = (documento,)
-                self.run_query(query, parametros)
-                self.message['text'] = 'Se ha sumado un mes al cliente con documento {}'.format(
-                    documento)
+                self.message['text'] = 'Se ha sumado {} mes al cliente con documento {}'.format(
+                   self.cantidad_meses, documento)
                 self.ventana_mes.destroy()
             else:
                 self.message['text'] = 'Ingrese un documento válido'
@@ -283,20 +213,21 @@ class Acceso:
             fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
             dni_existente_query = 'SELECT * FROM clientes WHERE Dni = ?'
             dni_existente_parametros = (documento,)
-            dni_existente_resultado = self.run_query(dni_existente_query, dni_existente_parametros)
+            dni_existente_resultado = self.run_query(
+                dni_existente_query, dni_existente_parametros)
             if dni_existente_resultado.fetchone():
                 query = 'SELECT * FROM clientes WHERE Dni = ? AND date(Fecha) < date(?)'
                 parametros = (documento, fecha_actual)
                 resultado = self.run_query(query, parametros)
 
                 if resultado.fetchone():
-                
+
                     self.message['text'] = 'Paga la cuota rata'
-                    #self.ser.write(b'0')
+                    # self.ser.write(b'0')
                 else:
                     self.message['text'] = 'BIENVENIDO'
                     print("usuario no encontrado")
-                    ##self.ser.write(b'1')
+                    # self.ser.write(b'1')
 
                 self.ventana_dni.destroy()
             else:
