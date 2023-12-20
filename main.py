@@ -346,8 +346,10 @@ class Acceso:
 
     def verificacion_dni(self):
         try:
+            puerto_serial = "COM3"  
+            baud_rate = 9600 
+            ser = serial.Serial(puerto_serial, baud_rate, timeout=1)
             documento = self.documento.get()
-            # Obtener la fecha actual en el formato correcto para SQLite
             fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
             dni_existente_query = 'SELECT * FROM clientes WHERE Dni = ?'
             dni_existente_parametros = (documento,)
@@ -361,11 +363,10 @@ class Acceso:
                 if resultado.fetchone():
 
                     self.message['text'] = 'Paga la cuota rata'
-                    # self.ser.write(b'0')
+                    ser.write(b'0')
                 else:
                     self.message['text'] = 'BIENVENIDO'
-                    print("usuario no encontrado")
-                    # self.ser.write(b'1')
+                    ser.write(b'1')
 
                 self.ventana_dni.destroy()
             else:
