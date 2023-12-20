@@ -31,9 +31,9 @@ class Acceso:
         frame_agregar.grid(row=0, column=0, pady=20, padx=10)
         ttk.Button(frame_agregar, text='Agregar', command=self.agregar_usuario,
                    style='TButton').grid(row=0, column=0,  padx=10, sticky=W+E, columnspan=2)
-        ttk.Button(frame_agregar, text='Eliminar', command=self.agregar_usuario,
+        ttk.Button(frame_agregar, text='Eliminar', command=self.eliminar_usuario,
                    style='TButton').grid(row=1, column=0,  padx=10, sticky=W+E, columnspan=2)
-        ttk.Button(frame_agregar, text='Actualizar datos', command=self.agregar_usuario,
+        ttk.Button(frame_agregar, text='Actualizar datos', command=self.editar,
                    style='TButton').grid(row=2, column=0,  padx=10, sticky=W+E, columnspan=2)
 
         # Marco para leer tarjetas
@@ -153,7 +153,142 @@ class Acceso:
 
         except Exception as e:
             print("Error:", e)
-           
+    
+    def editar(self):
+        self.ventana_Editar = Toplevel()
+        self.ventana_Editar.title('Editar usuario')
+        self.ventana_Editar.configure(bg='#FFA07A')
+
+        Label(self.ventana_Editar, text="Documento: ", font=(
+            'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
+        self.documento_editar = Entry(self.ventana_Editar)
+        self.documento_editar.focus()
+        self.documento_editar.grid(row=1, column=1)
+
+        ttk.Button(self.ventana_Editar, text="Buscar usuario", command=self.buscar_usuario,
+                   style='TButton').grid(row=6, columnspan=2, sticky=W+E)
+        self.message = Label(text='', fg='red', font=(
+            'Helvetica', 12, 'italic'), bg='#FFA07A')
+        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
+
+    def buscar_usuario(self):
+        try:
+            documento = self.documento_editar.get()
+            # Consultar la información actual del usuario
+            query_usuario_actual = 'SELECT * FROM clientes WHERE Dni = ?'
+            parametros_usuario_actual = (documento,)
+            resultado_usuario_actual = self.run_query(
+                query_usuario_actual, parametros_usuario_actual)
+            usuario_actual = resultado_usuario_actual.fetchone()
+
+            if usuario_actual:
+                # Rellenar los campos de edición con la información actual
+                self.ventana_usuario = Toplevel()
+                self.ventana_usuario.title('Editar usuario')
+                self.ventana_usuario.configure(bg='#FFA07A')
+
+                Label(self.ventana_usuario, text="Nombre: ", font=(
+                    'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
+                self.nombre = Entry(self.ventana_usuario)
+                self.nombre.insert(0, usuario_actual[1])  # Nombre
+                self.nombre.grid(row=1, column=1)
+
+                Label(self.ventana_usuario, text="Apellido: ", font=(
+                    'Helvetica', 12), bg='#FFA07A').grid(row=2, column=0)
+                self.apellido = Entry(self.ventana_usuario)
+                self.apellido.insert(0, usuario_actual[2])  # Apellido
+                self.apellido.grid(row=2, column=1)
+
+                Label(self.ventana_usuario, text="Documento: ", font=(
+                    'Helvetica', 12), bg='#FFA07A').grid(row=3, column=0)
+                self.documento = Entry(self.ventana_usuario)
+                self.documento.insert(0, usuario_actual[3])  # DNI
+                self.documento.grid(row=3, column=1)
+
+                ttk.Button(self.ventana_usuario, text="Leer tarjeta", command=self.Leer_tarjeta,
+                           style='TButton').grid(row=5, columnspan=2, sticky=W+E)
+                ttk.Button(self.ventana_usuario, text="Guardar cambios", command=self.guardar_edit,
+                           style='TButton').grid(row=6, columnspan=2, sticky=W+E)
+
+                self.message = Label(text='', fg='red', font=(
+                    'Helvetica', 12, 'italic'), bg='#FFA07A')
+                self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
+
+            else:
+                self.message['text'] = 'No existe usuario con ese DNI'
+
+        except Exception as e:
+            print("Error:", e)
+
+    def validar_edit(self):
+        return len(self.nombre.get()) != 0 and len(self.apellido.get()) != 0 and len(self.documento.get()) != 0
+
+    def guardar_edit(self):
+        try:
+            dni = self.documento.get()
+
+            # Verificar si el DNI ya existe en la base de datos
+            query_verificacion = 'SELECT * FROM clientes WHERE Dni = ?'
+            parametros_verificacion = (dni,)
+            resultado_verificacion = self.run_query(
+                query_verificacion, parametros_verificacion)
+
+            if resultado_verificacion.fetchone():
+                # El DNI ya existe, realizar edición
+                if self.validar_edit():
+                    # Obtener la información actualizada
+                    nuevo_nombre = self.nombre.get()
+                    nuevo_apellido = self.apellido.get()
+
+                    # Actualizar la base de datos
+                    query_actualizar = 'UPDATE clientes SET Nombre = ?, Apellido = ? WHERE Dni = ?'
+                    parametros_actualizar = (nuevo_nombre, nuevo_apellido, dni)
+                    self.run_query(query_actualizar, parametros_actualizar)
+
+                    self.message['text'] = 'Usuario editado correctamente'
+                    self.ventana_usuario.destroy()
+                    self.ventana_Editar.destroy()
+                else:
+                    self.message['text'] = 'Un campo está vacío'
+            else:
+                self.message['text'] = 'No existe usuario con ese DNI'
+
+        except Exception as e:
+            print("Error:", e)
+
+    
+    def eliminar_usuario(self):
+        self.ventana_Borrar = Toplevel()
+        self.ventana_Borrar.title('Eliminar usuario')
+        self.ventana_Borrar.configure(bg='#FFA07A')
+
+        Label(self.ventana_Borrar, text="Documento: ", font=(
+            'Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
+        self.documento = Entry(self.ventana_Borrar)
+        self.documento.focus()
+        self.documento.grid(row=1, column=1)
+
+        ttk.Button(self.ventana_Borrar, text="Eliminar usuario", command=self.borrar,
+                   style='TButton').grid(row=6, columnspan=2, sticky=W+E)
+        self.message = Label(text='', fg='red', font=(
+            'Helvetica', 12, 'italic'), bg='#FFA07A')
+        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
+    
+    def borrar(self):
+        try:
+            documento = self.documento.get()
+            if documento:
+                query = 'DELETE FROM clientes WHERE dni = ?'
+                parametros = (documento,)
+                self.run_query(query, parametros)
+                self.message['text'] = 'Se ha eliminado al cliente con documento {}'.format(documento)
+                self.ventana_Borrar.destroy()
+            else:
+                self.message['text'] = 'Ingrese un documento válido'
+
+        except Exception as e:
+            print("Error:", e)    
+    
     def sumar_mes(self,cantidad_meses):
         self.ventana_mes = Toplevel()
         self.ventana_mes.title('Abono de cuota')
