@@ -40,7 +40,7 @@ class Acceso:
         frame_leer = LabelFrame(frame_principal, text="Ingreso", font=(
             'Helvetica', 14, 'bold'), bg='#5499C7')
         frame_leer.grid(row=0, column=1, pady=20, padx=10)
-        ttk.Button(frame_leer, text='Tarjeta', style='TButton').grid(
+        ttk.Button(frame_leer, text='Tarjeta',command=self.entrar_tarjeta, style='TButton').grid(
             row=0, column=0, sticky=W+E)
         ttk.Button(frame_leer, text='Documento', command=self.ingreso_dni,
                    style='TButton').grid(row=1, column=0, sticky=W+E)
@@ -99,19 +99,22 @@ class Acceso:
             'Helvetica', 12, 'italic'), bg='#FFA07A')  # Fondo en color LightSalmon
         self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
 
-        self.entrar_tarjetar()
 
     def Leer_tarjeta(self):
+        arduino_port = 'COM3'
+        ser = serial.Serial(arduino_port, 9600, timeout=1)
         try:
-            ser = serial.Serial('COM3', 9600)
-            tarjeta_id = ser.readline().decode().strip()
-            ser.close()
+            while True:
+        # Lee la línea recibida desde Arduino
+                tarjeta_id = ser.readline().decode('utf-8').rstrip()
+        
+                if tarjeta_id:
+                    print("id de tarjeta", tarjeta_id)
+                    self.tarjeta_id = tarjeta_id
+                    break
 
         except Exception as e:
-            print("error:", e)
-
-        self.tarjeta_id = tarjeta_id
-        print("ID de tarjeta: ", tarjeta_id)
+            print("Error:", e)
 
     def validacion(self):
         return len(self.nombre.get()) != 0 and len(self.apellido.get()) != 0 and len(self.documento.get()) != 0
@@ -133,10 +136,10 @@ class Acceso:
                 self.documento.delete(0, END)
             elif self.validacion():
                 fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
-                tarjeta_id = "8675309125"
+                #tarjeta_id = "8675309125"
                 query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha) VALUES (?, ?, ?, ?, ?)'
                 parametros = (self.nombre.get(), self.apellido.get(
-                ), dni, tarjeta_id, fecha_actual)
+                ), dni, self.tarjeta_id, fecha_actual)
                 self.run_query(query, parametros)
 
                 print("Usuario guardado en la base de datos.")
@@ -387,20 +390,35 @@ class Acceso:
 
     def entrar_tarjeta(self):
         fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
-        ser = serial.Serial("COM3", 9600)
-        self.ser = ser
-        tarjeta_id = ser.readline().decode().strip()
-        query = "SELECT * FROM clientes WHERE Tarjeta = ? AND date(Fecha) < date(?)"
-        parametros = (tarjeta_id, fecha_actual)
+        arduino_port = 'COM3'
+        ser = serial.Serial(arduino_port, 9600, timeout=1)
+        while True:
+        # Lee la línea recibida desde Arduino
+            tarjeta_id = ser.readline().decode('utf-8').rstrip()
+        
+            if tarjeta_id:
+                print("id de tarjeta", tarjeta_id)
+                self.tarjeta_id = tarjeta_id
+                break   
+        tarj_exis_query = 'SELECT * FROM clientes WHERE Tarjeta = ?' 
+        tarj_exis_parametros = (tarjeta_id,)
+        tarjeta_existente_resultado = self.run_query(tarj_exis_query,tarj_exis_parametros)   
+        if tarjeta_existente_resultado.fetchone():
+            query = "SELECT * FROM clientes WHERE Tarjeta = ? AND date(Fecha) < date(?)"
+            parametros = (tarjeta_id, fecha_actual)
+            resultado = self.run_query(query, parametros)
 
-        resultado = self.run_query(query, parametros)
-
-        if resultado.fetchone():
-            self.message['text'] = 'Paga la cuota rata'
-            self.ser.write(b'0')
-        else:
-            self.message['text'] = 'BIENVENIDO'
-            self.ser.write(b'1')
+            if resultado.fetchone():
+                print(" NO pude ingreesar correctamente")
+            # self.message['text'] = 'Paga la cuota rata'
+            # self.ser.write(b'0')
+            else:
+            #self.message['text'] = 'BIENVENIDO'
+            #self.ser.write(b'1')
+                print(" pude ingreesar correctamente")
+                
+        else:   
+            print("no existe esa tarjeta")
 
 
 if __name__ == '__main__':
