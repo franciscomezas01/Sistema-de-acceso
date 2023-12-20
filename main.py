@@ -393,6 +393,9 @@ class Acceso:
         fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
         arduino_port = 'COM3'
         ser = serial.Serial(arduino_port, 9600, timeout=1)
+        self.message = Label(text='', fg='red', font=(
+            'Helvetica', 12, 'italic'), bg='#FFA07A')
+        self.message.grid(row=7, column=0, columnspan=3, sticky=W + E)
         while True:
         # Lee la línea recibida desde Arduino
             tarjeta_id = ser.readline().decode('utf-8').rstrip()
@@ -411,15 +414,16 @@ class Acceso:
 
             if resultado.fetchone():
                 print(" NO pude ingreesar correctamente")
-            # self.message['text'] = 'Paga la cuota rata'
-            # self.ser.write(b'0')
+                self.message['text'] = 'Paga la cuota rata'
+                ser.write(b'0')
             else:
-            #self.message['text'] = 'BIENVENIDO'
-            #self.ser.write(b'1')
-                print(" pude ingreesar correctamente")
+                self.message['text'] = 'BIENVENIDO'
+                ser.write(b'1')
+                print("pude ingresar correctamente")
                 
         else:   
-            print("no existe esa tarjeta")
+            self.message['text'] = 'Usuario no existente'
+            ser.write(b'2')
 
 
 if __name__ == '__main__':
