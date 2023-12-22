@@ -136,10 +136,11 @@ class Acceso:
             return False
     
     def guardar_usuario(self):
+        print("aca no estaria")
         try:
             dni = self.documento.get()
             plan = self.Plan.get()
-
+            
             if not self.validar_plan(plan):
                 self.message['text'] = 'Ingrese un plan válido (2-6)'
                 return
@@ -155,26 +156,38 @@ class Acceso:
                 self.message['text'] = 'El DNI {} ya existe en la base de datos'.format(
                     dni)
                 self.documento.delete(0, END)
-            elif self.validacion():
-                fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
-                #En caso de no tener arduino se puede descomentar esta linea y sacarle el self a la tarjeta para verificar almacenamiento
-                tarjeta_id = "8675309125" 
-                query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha, Plan ) VALUES (?, ?, ?, ?, ?, ?)'
-                parametros = (self.nombre.get(), self.apellido.get(
-                ), dni, tarjeta_id, fecha_actual, plan)
-                self.run_query(query, parametros)
-
-                print("Usuario guardado en la base de datos.")
-                self.message['text'] = 'El cliente {} fue agregado'.format(
-                    self.nombre.get())
-                self.nombre.delete(0, END)
-                self.apellido.delete(0, END)
-                self.documento.delete(0, END)
-
-                self.ventana_usuario.destroy()
+                
+                #Se verifica que no exista esa tarjeta
             else:
-                print("campos vacíos")
-                self.message['text'] = 'Un campo está vacío'
+                query_verificacion = 'SELECT * FROM clientes WHERE Tarjeta = ?'
+                parametros_verificacion = (self.tarjeta_id,)
+                resultado_tarjeta = self.run_query(
+                query_verificacion, parametros_verificacion)
+                print("aca llego")
+                if resultado_tarjeta.fetchone():
+                    print("aca llego?")
+                    self.message['text'] = 'La tarjeta  ya existe en la base de datos'
+                    self.documento.delete(0, END)
+                elif self.validacion():
+                    fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
+                #En caso de no tener arduino se puede descomentar esta linea y sacarle el self a la tarjeta para verificar almacenamiento
+                #tarjeta_id = "8675309125" 
+                    query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha, Plan ) VALUES (?, ?, ?, ?, ?, ?)'
+                    parametros = (self.nombre.get(), self.apellido.get(
+                    ), dni, self.tarjeta_id, fecha_actual, plan)
+                    self.run_query(query, parametros)
+
+                    print("Usuario guardado en la base de datos.")
+                    self.message['text'] = 'El cliente {} fue agregado'.format(
+                    self.nombre.get())
+                    self.nombre.delete(0, END)
+                    self.apellido.delete(0, END)
+                    self.documento.delete(0, END)
+
+                    self.ventana_usuario.destroy()
+                else:
+                    print("campos vacíos")
+                    self.message['text'] = 'Un campo está vacío'
 
         except Exception as e:
             print("Error:", e)
