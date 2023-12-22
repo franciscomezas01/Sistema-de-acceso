@@ -89,6 +89,11 @@ class Acceso:
             'Helvetica', 12), bg='#FFA07A').grid(row=3, column=0)
         self.documento = Entry(self.ventana_usuario)
         self.documento.grid(row=3, column=1)
+        
+        Label(self.ventana_usuario, text="Plan(2-6): ", font=(
+            'Helvetica', 12), bg='#FFA07A').grid(row=4, column=0)
+        self.Plan = Entry(self.ventana_usuario)
+        self.Plan.grid(row=4, column=1)
 
         ttk.Button(self.ventana_usuario, text="Leer tarjeta", command=self.Leer_tarjeta,
                    style='TButton').grid(row=5, columnspan=2, sticky=W+E)
@@ -119,9 +124,25 @@ class Acceso:
     def validacion(self):
         return len(self.nombre.get()) != 0 and len(self.apellido.get()) != 0 and len(self.documento.get()) != 0
 
+    def validar_plan(self, plan):
+        try:
+            plan_entero=int(plan)
+            
+            if 2<= plan_entero <=6:
+                return True
+            else:
+                return False
+        except ValueError:
+            return False
+    
     def guardar_usuario(self):
         try:
             dni = self.documento.get()
+            plan = self.Plan.get()
+
+            if not self.validar_plan(plan):
+                self.message['text'] = 'Ingrese un plan válido (2-6)'
+                return
 
         # Verifica si el DNI ya existe en la base de datos
             query_verificacion = 'SELECT * FROM clientes WHERE Dni = ?'
@@ -136,10 +157,11 @@ class Acceso:
                 self.documento.delete(0, END)
             elif self.validacion():
                 fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
-                #tarjeta_id = "8675309125"
-                query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha) VALUES (?, ?, ?, ?, ?)'
+                #En caso de no tener arduino se puede descomentar esta linea y sacarle el self a la tarjeta para verificar almacenamiento
+                tarjeta_id = "8675309125" 
+                query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha, Plan ) VALUES (?, ?, ?, ?, ?, ?)'
                 parametros = (self.nombre.get(), self.apellido.get(
-                ), dni, self.tarjeta_id, fecha_actual)
+                ), dni, tarjeta_id, fecha_actual, plan)
                 self.run_query(query, parametros)
 
                 print("Usuario guardado en la base de datos.")
