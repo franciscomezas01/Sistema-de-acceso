@@ -4,7 +4,7 @@ import sqlite3
 import serial
 import datetime
 from dateutil.relativedelta import relativedelta
-
+import time
 import pandas as pd
 
 
@@ -410,17 +410,23 @@ class Acceso:
                         self.run_query(registro_entrada_query, registro_entrada_parametros)
 
                         self.message['text'] = 'BIENVENIDO'
-                        ser.write(b'1')
+                        write = 1
                     else:
                         self.message['text'] = 'Ha excedido la cantidad de entradas permitidas para esta semana'
-                        ser.write(b'0')
+                        write = 2
                 else:
                     self.message['text'] = 'Paga la cuota rata'
-                    ser.write(b'0')
+                    write = 0
             else:
                 self.message['text'] = 'No existe usuario con ese DNI'
-            
+                write = 4
             self.ventana_dni.destroy()
+            for range in (1,2):
+                print(write)
+                ser.write(str(write).encode())
+                time.sleep(2)
+            
+            ser.close()
         except Exception as e:
             print("Error:", e)
 
