@@ -373,28 +373,57 @@ class Acceso:
             ser = serial.Serial(puerto_serial, baud_rate, timeout=1)
             documento = self.documento.get()
             fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
+            
             dni_existente_query = 'SELECT * FROM clientes WHERE Dni = ?'
             dni_existente_parametros = (documento,)
-            dni_existente_resultado = self.run_query(
-                dni_existente_query, dni_existente_parametros)
+            dni_existente_resultado = self.run_query(dni_existente_query, dni_existente_parametros)
+            
             if dni_existente_resultado.fetchone():
-                query = 'SELECT * FROM clientes WHERE Dni = ? AND date(Fecha) < date(?)'
-                parametros = (documento, fecha_actual)
-                resultado = self.run_query(query, parametros)
+                # Verificar si el usuario ha pagado la cuota
+                cuota_query = 'SELECT * FROM clientes WHERE Dni = ? AND date(Fecha) < date(?)'
+                cuota_parametros = (documento, fecha_actual)
+                cuota_resultado = self.run_query(cuota_query, cuota_parametros)
 
-                if resultado.fetchone():
+                if cuota_resultado.fetchone():
+                    # Verificar si el usuario cumple con el plan semanal
+                    plan_semanal_query = '''
+                    SELECT COUNT(*) AS cantidad_entradas
+                    FROM registro_entradas
+                    WHERE cliente_id = ? AND 
+                          date(fecha_entrada, 'weekday 0', '-7 days') < date(?)
+                    '''
+                    plan_semanal_parametros = (documento, fecha_actual)
+                    plan_semanal_resultado = self.run_query(plan_semanal_query, plan_semanal_parametros)
+                    cantidad_entradas_semana = plan_semanal_resultado.fetchone()[0]
 
+                    # Obtener el plan semanal del usuario
+                    plan_usuario_query = 'SELECT Plan FROM clientes WHERE Dni = ?'
+                    plan_usuario_parametros = (documento,)
+                    plan_usuario_resultado = self.run_query(plan_usuario_query, plan_usuario_parametros)
+                    plan_usuario = plan_usuario_resultado.fetchone()[0]
+
+                    # Verificar si el usuario puede entrar según su plan
+                    if cantidad_entradas_semana < plan_usuario:
+                        # Registrar la entrada en la tabla registro_entradas
+                        registro_entrada_query = 'INSERT INTO registro_entradas (cliente_id, fecha_entrada, hora_entrada) VALUES (?, ?, ?)'
+                        registro_entrada_parametros = (documento, datetime.datetime.now().strftime("%Y-%m-%d"), datetime.datetime.now().strftime("%H:%M:%S"))
+                        self.run_query(registro_entrada_query, registro_entrada_parametros)
+
+                        self.message['text'] = 'BIENVENIDO'
+                        ser.write(b'1')
+                    else:
+                        self.message['text'] = 'Ha excedido la cantidad de entradas permitidas para esta semana'
+                        ser.write(b'0')
+                else:
                     self.message['text'] = 'Paga la cuota rata'
                     ser.write(b'0')
-                else:
-                    self.message['text'] = 'BIENVENIDO'
-                    ser.write(b'1')
-
-                self.ventana_dni.destroy()
             else:
-                self.message['text'] = 'No existe usuario con ese dni'
+                self.message['text'] = 'No existe usuario con ese DNI'
+            
+            self.ventana_dni.destroy()
         except Exception as e:
             print("Error:", e)
+
 
     def exportar_a_excel(self):
         try:
