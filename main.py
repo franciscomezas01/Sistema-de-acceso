@@ -167,11 +167,12 @@ class Acceso:
                     self.documento.delete(0, END)
                 elif self.validacion():
                     fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
+                    fecha_nueva = fecha_actual + relativedelta(months=1)
                 #En caso de no tener arduino se puede descomentar esta linea y sacarle el self a la tarjeta para verificar almacenamiento
                 #tarjeta_id = "8675309125" 
                     query = 'INSERT INTO clientes (Nombre, Apellido, Dni, Tarjeta, Fecha, Plan ) VALUES (?, ?, ?, ?, ?, ?)'
                     parametros = (self.nombre.get(), self.apellido.get(
-                    ), dni, self.tarjeta_id, fecha_actual, plan)
+                    ), dni, self.tarjeta_id, fecha_nueva, plan)
                     self.run_query(query, parametros)
 
                     print("Usuario guardado en la base de datos.")
@@ -479,19 +480,47 @@ class Acceso:
             parametros = (tarjeta_id, fecha_actual)
             resultado = self.run_query(query, parametros)
 
-            if resultado.fetchone():
-                print(" NO pude ingreesar correctamente")
-                self.message['text'] = 'Paga la cuota rata'
-                ser.write(b'0')
+            if not resultado.fetchone():
+                    # Verificar si el usuario cumple con el plan semanal
+                    plan_semanal_query = '''
+                    SELECT COUNT(*) AS cantidad_entradas
+                    FROM registro_entradas
+                    WHERE cliente_id = ? AND 
+                          date(fecha_entrada, 'weekday 0', '-7 days') < date(?)
+                    '''
+                    plan_semanal_parametros = (tarjeta_id, fecha_actual)
+                    plan_semanal_resultado = self.run_query(plan_semanal_query, plan_semanal_parametros)
+                    cantidad_entradas_semana = plan_semanal_resultado.fetchone()[0]
+
+                    # Obtener el plan semanal del usuario
+                    plan_usuario_query = 'SELECT Plan FROM clientes WHERE Dni = ?'
+                    plan_usuario_parametros = (tarjeta_id,)
+                    plan_usuario_resultado = self.run_query(plan_usuario_query, plan_usuario_parametros)
+                    plan_usuario = plan_usuario_resultado.fetchone()[0]
+
+                    # Verificar si el usuario puede entrar según su plan
+                    if cantidad_entradas_semana < plan_usuario:
+                        # Registrar la entrada en la tabla registro_entradas
+                        registro_entrada_query = 'INSERT INTO registro_entradas (cliente_id, fecha_entrada, hora_entrada) VALUES (?, ?, ?)'
+                        registro_entrada_parametros = (tarjeta_id, datetime.datetime.now().strftime("%Y-%m-%d"), datetime.datetime.now().strftime("%H:%M:%S"))
+                        self.run_query(registro_entrada_query, registro_entrada_parametros)
+
+                        self.message['text'] = 'BIENVENIDO'
+                        write = 1
+                    else:
+                        self.message['text'] = 'Ha excedido la cantidad de entradas permitidas para esta semana'
+                        write = 2
             else:
-                self.message['text'] = 'BIENVENIDO'
-                ser.write(b'1')
-                print("pude ingresar correctamente")
+                self.message['text'] = 'Paga la cuota rata'
+                write = 0
                 
         else:   
             self.message['text'] = 'Usuario no existente'
-            ser.write(b'2')
-
+            write = 4
+        for range in (1,2):
+            print(write)
+            ser.write(str(write).encode())
+            time.sleep(2)
 
 if __name__ == '__main__':
     ventana = Tk()
