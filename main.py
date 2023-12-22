@@ -384,7 +384,7 @@ class Acceso:
                 cuota_parametros = (documento, fecha_actual)
                 cuota_resultado = self.run_query(cuota_query, cuota_parametros)
 
-                if cuota_resultado.fetchone():
+                if not cuota_resultado.fetchone():
                     # Verificar si el usuario cumple con el plan semanal
                     plan_semanal_query = '''
                     SELECT COUNT(*) AS cantidad_entradas
