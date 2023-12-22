@@ -136,7 +136,6 @@ class Acceso:
             return False
     
     def guardar_usuario(self):
-        print("aca no estaria")
         try:
             dni = self.documento.get()
             plan = self.Plan.get()
@@ -163,9 +162,7 @@ class Acceso:
                 parametros_verificacion = (self.tarjeta_id,)
                 resultado_tarjeta = self.run_query(
                 query_verificacion, parametros_verificacion)
-                print("aca llego")
                 if resultado_tarjeta.fetchone():
-                    print("aca llego?")
                     self.message['text'] = 'La tarjeta  ya existe en la base de datos'
                     self.documento.delete(0, END)
                 elif self.validacion():
