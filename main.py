@@ -240,6 +240,12 @@ class Acceso:
                 self.documento = Entry(self.ventana_usuario)
                 self.documento.insert(0, usuario_actual[3])  # DNI
                 self.documento.grid(row=3, column=1)
+                
+                Label(self.ventana_usuario, text="Plan: ", font=(
+                    'Helvetica', 12), bg='#FFA07A').grid(row=4, column=0)
+                self.documento = Entry(self.ventana_usuario)
+                self.documento.insert(0, usuario_actual[6])  # Plan
+                self.documento.grid(row=4, column=1)
 
                 ttk.Button(self.ventana_usuario, text="Leer tarjeta", command=self.Leer_tarjeta,
                            style='TButton').grid(row=5, columnspan=2, sticky=W+E)
@@ -262,6 +268,10 @@ class Acceso:
     def guardar_edit(self):
         try:
             dni = self.documento.get()
+            plan = self.Plan.get()
+            if not self.validar_plan(plan):
+                self.message['text'] = 'Ingrese un plan válido (2-6)'
+                return
 
             # Verificar si el DNI ya existe en la base de datos
             query_verificacion = 'SELECT * FROM clientes WHERE Dni = ?'
@@ -275,10 +285,10 @@ class Acceso:
                     # Obtener la información actualizada
                     nuevo_nombre = self.nombre.get()
                     nuevo_apellido = self.apellido.get()
-
+                    
                     # Actualizar la base de datos
-                    query_actualizar = 'UPDATE clientes SET Nombre = ?, Apellido = ? WHERE Dni = ?'
-                    parametros_actualizar = (nuevo_nombre, nuevo_apellido, dni)
+                    query_actualizar = 'UPDATE clientes SET Nombre = ?, Apellido = ? WHERE Dni = ? , Plan = ?'
+                    parametros_actualizar = (nuevo_nombre, nuevo_apellido, dni, plan)
                     self.run_query(query_actualizar, parametros_actualizar)
 
                     self.message['text'] = 'Usuario editado correctamente'
