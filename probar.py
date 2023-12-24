@@ -26,6 +26,9 @@ class Acceso:
 
         self.frame_agregar_usuarios = ttk.Frame(self.root)  # Inicializar aquí
         self.frame_agregar_usuarios.pack_forget()  # Ocultar por defecto
+        
+        self.frame_formulario_edicion = ttk.Frame(self.root)  # Inicializar aquí
+        self.frame_formulario_edicion.pack_forget()  # Ocultar por defecto
 
         ttk.Button(self.frame_agregar, text='Agregar', command=self.mostrar_agregar, style='TButton').grid(
             row=0, column=0, padx=10, sticky=tk.W + tk.E, columnspan=2)
@@ -157,6 +160,7 @@ class Acceso:
                     self.documento.delete(0, END)
 
                     self.limpiar_interfaz()
+                    print("aca no llega por que aca se ejecuta")
                 else:
                     print("campos vacíos")
                     self.message['text'] = 'Un campo está vacío'
@@ -219,10 +223,7 @@ class Acceso:
         self.limpiar_interfaz()
         self.frame_principal.pack_forget()
 
-    # Crear un nuevo marco para el formulario de edición
-    # Crear un nuevo marco para el formulario de edición
-        self.frame_formulario_edicion = ttk.Frame(self.root)
-        self.frame_formulario_edicion.grid(row=0, column=0, pady=50, padx=50)
+        self.frame_formulario_edicion.pack(pady=50, padx=50)
 
         tk.Label(self.frame_formulario_edicion, text="Nombre: ", font=('Helvetica', 12), bg='#FFA07A').grid(row=1, column=0)
         self.nombre = tk.Entry(self.frame_formulario_edicion)
@@ -320,6 +321,8 @@ class Acceso:
     def limpiar_interfaz(self):
         # Limpiar el formulario de agregar usuarios
         self.frame_agregar_usuarios.pack_forget()
+        self.frame_formulario_edicion.pack_forget()
+        
 
         # Limpiar el formulario de DNI
         if hasattr(self, 'frame_formulario_dni'):
@@ -331,6 +334,7 @@ class Acceso:
 
         # Volver a mostrar el marco principal
         self.frame_principal.pack(pady=50, padx=50)
+        
 
     def entrar_tarjeta(self):
         # Lógica para el botón "Tarjeta"
